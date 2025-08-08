@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple DEX - Decentralized Exchange</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .token-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .token-input-group input {
+            flex: 2;
+        }
+        
+        .token-input-group select {
+            flex: 1;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #feca57, #ff9ff3);
+            color: #333;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .swap-arrow {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+        
+        .swap-arrow button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .swap-arrow button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(180deg);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4caf50;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        
+        .status.loading {
+            background: rgba(255, 193, 7, 0.3);
+            border: 1px solid #ffc107;
+        }
+        
+        .pool-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .pool-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .pool-tokens {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .pool-reserves {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .connect-wallet {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .price-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .price-info .label {
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .price-info .value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Simple DEX</h1>
+            <p class="subtitle">Decentralized Token Exchange</p>
+        </header>
+        
+        <div id="wallet-status" class="connect-wallet">
+            <button class="btn btn-success" onclick="connectWallet()">Connect MetaMask</button>
+        </div>
+        
+        <div id="main-app" style="display: none;">
+            <div class="main-content">
+                <!-- Swap Section -->
+                <div class="section">
+                    <h2 class="section-title">🔄 Swap Tokens</h2>
+                    
+                    <div class="form-group">
+                        <label>From</label>
+                        <div class="token-input-group">
+                            <input type="number" id="swapAmountIn" placeholder="0.0" step="any">
+                            <select id="tokenIn">
+                                <option value="">Select Token</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="swap-arrow">
+                        <button onclick="swapTokenPositions()">↕</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>To</label>
+                        <div class="token-input-group">
+                            <input type="number" id="swapAmountOut" placeholder="0.0" readonly>
+                            <select id="tokenOut">
+                                <option value="">Select Token</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="swap-price-info" class="price-info" style="display: none;">
+                        <div class="label">Expected Output</div>
+                        <div class="value" id="expected-output">0</div>
+                        <div class="label" style="margin-top: 10px;">Price Impact</div>
+                        <div class="value" id="price-impact">0%</div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="swapBtn" onclick="executeSwap()">
+                        Swap Tokens
+                    </button>
+                    
+                    <div id="swap-status"></div>
+                </div>
+                
+                <!-- Liquidity Section -->
+                <div class="section">
+                    <h2 class="section-title">💧 Liquidity</h2>
+                    
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="showLiquidityTab('add')">Add</button>
+                        <button class="tab-btn" onclick="showLiquidityTab('remove')">Remove</button>
+                    </div>
+                    
+                    <!-- Add Liquidity Tab -->
+                    <div id="add-liquidity-tab">
+                        <div class="form-group">
+                            <label>Token A</label>
+                            <div class="token-input-group">
+                                <input type="number" id="addAmountA" placeholder="0.0" step="any">
+                                <select id="addTokenA">
+                                    <option value="">Select Token</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Token B</label>
+                            <div class="token-input-group">
+                                <input type="number" id="addAmountB" placeholder="0.0" step="any">
+                                <select id="addTokenB">
+                                    <option value="">Select Token</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-warning" onclick="createPool()" id="createPoolBtn" style="display: none;">
+                            Create Pool
+                        </button>
+                        
+                        <button class="btn btn-success" onclick="addLiquidity()" id="addLiquidityBtn">
+                            Add Liquidity
+                        </button>
+                    </div>
+                    
+                    <!-- Remove Liquidity Tab -->
+                    <div id="remove-liquidity-tab" style="display: none;">
+                        <div class="form-group">
+                            <label>Pool</label>
+                            <select id="userPoolSelect">
+                                <option value="">Select Your Pool</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Amount to Remove (%)</label>
+                            <input type="range" id="removePercentage" min="0" max="100" value="50" 
+                                   oninput="updateRemovePreview()">
+                            <div style="text-align: center; margin-top: 5px;">
+                                <span id="removePercentageText">50%</span>
+                            </div>
+                        </div>
+                        
+                        <div id="remove-preview" class="price-info" style="display: none;">
+                            <div class="label">You will receive</div>
+                            <div class="value" id="remove-amounts">0 TokenA + 0 TokenB</div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="removeLiquidity()" id="removeLiquidityBtn">
+                            Remove Liquidity
+                        </button>
+                    </div>
+                    
+                    <div id="liquidity-status"></div>
+                </div>
+                
+                <!-- Pools Section -->
+                <div class="section">
+                    <h2 class="section-title">🏊‍♂️ Active Pools</h2>
+                    
+                    <button class="btn btn-success" onclick="loadPools()" style="margin-bottom: 20px;">
+                        Refresh Pools
+                    </button>
+                    
+                    <div id="pools-list">
+                        <p style="text-align: center; opacity: 0.7;">Click "Refresh Pools" to load active pools</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract configuration
+        const DEX_CONTRACT_ADDRESS = "0xD4Fc541236927E2EAf8F27606bD7309C1Fc2cbee"; // UPDATE AFTER DEPLOY
+        const DEX_ABI = [
+            "function createPool(address tokenA, address tokenB) external returns (bytes32)",
+            "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin) external returns (uint256, uint256, uint256)",
+            "function removeLiquidity(address tokenA, address tokenB, uint256 liquidity, uint256 amountAMin, uint256 amountBMin) external returns (uint256, uint256)",
+            "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address tokenIn, address tokenOut) external returns (uint256)",
+            "function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) external view returns (uint256)",
+            "function getPoolInfo(address tokenA, address tokenB) external view returns (uint256, uint256, uint256, bool)",
+            "function getUserShares(address tokenA, address tokenB, address user) external view returns (uint256)",
+            "function getAllPools() external view returns (bytes32[] memory)",
+            "event PoolCreated(address indexed tokenA, address indexed tokenB, bytes32 poolId)",
+            "event TokenSwapped(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)"
+        ];
+        
+        const ERC20_ABI = [
+            "function balanceOf(address account) external view returns (uint256)",
+            "function approve(address spender, uint256 amount) external returns (bool)",
+            "function allowance(address owner, address spender) external view returns (uint256)",
+            "function symbol() external view returns (string)",
+            "function name() external view returns (string)",
+            "function decimals() external view returns (uint8)"
+        ];
+        
+        let provider, signer, dexContract, userAccount;
+        let availableTokens = []; // Will be populated with user's tokens
+        
+        // Connect to MetaMask
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum !== 'undefined') {
+                    // Request network switch to Sepolia if needed
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0xAA36A7' }], // Sepolia chainId
+                        });
+                    } catch (switchError) {
+                        console.log('Network switch error (might be already on Sepolia):', switchError);
+                    }
+                    
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = await provider.getSigner();
+                    userAccount = await signer.getAddress();
+                    
+                    // Verify we're on Sepolia
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== 11155111n) {
+                        throw new Error('Please switch to Sepolia testnet');
+                    }
+                    
+                    document.getElementById('wallet-status').innerHTML = `
+                        <div style="text-align: center;">
+                            <strong>✅ Connected: ${userAccount.slice(0, 6)}...${userAccount.slice(-4)}</strong>
+                            <br><small>Network: Sepolia Testnet</small>
+                            <br><button class="btn btn-warning" onclick="addTokenManually()" style="margin-top: 10px; width: auto; padding: 8px 16px;">Add Token</button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('main-app').style.display = 'block';
+                    
+                    if (DEX_CONTRACT_ADDRESS !== "0x...") {
+                        dexContract = new ethers.Contract(DEX_CONTRACT_ADDRESS, DEX_ABI, signer);
+                        await loadUserTokens();
+                    } else {
+                        await loadUserTokens();
+                        showStatus('⚠️ Please deploy DEX contract and update DEX_CONTRACT_ADDRESS', 'error', 'swap-status');
+                    }
+                    
+                } else {
+                    alert('Please install MetaMask!');
+                }
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                showStatus(`Error: ${error.message}`, 'error', 'swap-status');
+            }
+        }
+
+        // Load user's tokens (from TokenDeployer or manually added)
+        async function loadUserTokens() {
+            try {
+                // Method 1: Load from localStorage if available
+                const savedTokens = localStorage.getItem('userTokens');
+                if (savedTokens) {
+                    availableTokens = JSON.parse(savedTokens);
+                    populateTokenSelects();
+                    return;
+                }
+                
+                // Method 2: Manual token addresses for demo
+                // Replace these with your actual deployed token addresses
+                availableTokens = [
+                    {
+                        address: "0x1234567890123456789012345678901234567890", // Replace with real address
+                        symbol: "TKN1",
+                        name: "Demo Token 1",
+                        decimals: 18
+                    },
+                    {
+                        address: "0x0987654321098765432109876543210987654321", // Replace with real address
+                        symbol: "TKN2",
+                        name: "Demo Token 2", 
+                        decimals: 18
+                    }
+                ];
+                
+                // Save to localStorage
+                localStorage.setItem('userTokens', JSON.stringify(availableTokens));
+                populateTokenSelects();
+                
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+                // Fallback empty array
+                availableTokens = [];
+                populateTokenSelects();
+            }
+        }
+        
+        // Add token manually function
+        async function addTokenManually() {
+            const address = prompt("Enter token contract address:");
+            if (!address || !ethers.isAddress(address)) {
+                alert("Invalid address!");
+                return;
+            }
+            
+            try {
+                const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
+                const symbol = await tokenContract.symbol();
+                const name = await tokenContract.name();
+                const decimals = await tokenContract.decimals();
+                
+                const newToken = {
+                    address: address,
+                    symbol: symbol,
+                    name: name,
+                    decimals: decimals
+                };
+                
+                availableTokens.push(newToken);
+                localStorage.setItem('userTokens', JSON.stringify(availableTokens));
+                populateTokenSelects();
+                
+                alert(`Token ${symbol} added successfully!`);
+                
+            } catch (error) {
+                console.error('Error adding token:', error);
+                alert("Failed to add token. Make sure it's a valid ERC-20 token.");
+            }
+        }
+
+        // Populate token selection dropdowns
+        function populateTokenSelects() {
+            const selects = ['tokenIn', 'tokenOut', 'addTokenA', 'addTokenB'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select Token</option>';
+                
+                availableTokens.forEach(token => {
+                    const option = document.createElement('option');
+                    option.value = token.address;
+                    option.textContent = `${token.symbol} - ${token.name}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // Calculate swap output amount
+        async function calculateSwapOutput() {
+            const amountIn = document.getElementById('swapAmountIn').value;
+            const tokenInAddress = document.getElementById('tokenIn').value;
+            const tokenOutAddress = document.getElementById('tokenOut').value;
+            
+            if (!amountIn || !tokenInAddress || !tokenOutAddress || !dexContract) {
+                document.getElementById('swapAmountOut').value = '';
+                document.getElementById('swap-price-info').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Get token info safely
+                const tokenInContract = new ethers.Contract(tokenInAddress, ERC20_ABI, provider);
+                const tokenOutContract = new ethers.Contract(tokenOutAddress, ERC20_ABI, provider);
+                
+                // Check if pool exists first
+                const [reserveA, reserveB, totalLiquidity, exists] = await dexContract.getPoolInfo(tokenInAddress, tokenOutAddress);
+                
+                if (!exists || reserveA === 0n || reserveB === 0n) {
+                    document.getElementById('swapAmountOut').value = 'No liquidity';
+                    document.getElementById('swap-price-info').style.display = 'none';
+                    return;
+                }
+                
+                const amountInWei = ethers.parseEther(amountIn);
+                const amountOut = await dexContract.getAmountOut(amountInWei, tokenInAddress, tokenOutAddress);
+                const amountOutFormatted = ethers.formatEther(amountOut);
+                
+                document.getElementById('swapAmountOut').value = parseFloat(amountOutFormatted).toFixed(6);
+                document.getElementById('expected-output').textContent = parseFloat(amountOutFormatted).toFixed(6);
+                
+                // Calculate price impact (simplified)
+                const priceImpact = Math.abs((parseFloat(amountIn) - parseFloat(amountOutFormatted)) / parseFloat(amountIn) * 100);
+                document.getElementById('price-impact').textContent = `${priceImpact.toFixed(2)}%`;
+                
+                document.getElementById('swap-price-info').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error calculating output:', error);
+                document.getElementById('swapAmountOut').value = 'Pool not found';
+            }
+        }
+
+        // Execute token swap
+        async function executeSwap() {
+            const amountIn = document.getElementById('swapAmountIn').value;
+            const tokenInAddress = document.getElementById('tokenIn').value;
+            const tokenOutAddress = document.getElementById('tokenOut').value;
+            
+            if (!amountIn || !tokenInAddress || !tokenOutAddress) {
+                showStatus('Please fill all fields', 'error', 'swap-status');
+                return;
+            }
+            
+            try {
+                document.getElementById('swapBtn').disabled = true;
+                showStatus('Approving token spending...', 'loading', 'swap-status');
+                
+                // Approve token spending
+                const tokenContract = new ethers.Contract(tokenInAddress, ERC20_ABI, signer);
+                const amountInWei = ethers.parseEther(amountIn);
+                
+                const approveTx = await tokenContract.approve(DEX_CONTRACT_ADDRESS, amountInWei);
+                await approveTx.wait();
+                
+                showStatus('Executing swap...', 'loading', 'swap-status');
+                
+                // Execute swap
+                const amountOutMin = ethers.parseEther(document.getElementById('swapAmountOut').value);
+                const swapTx = await dexContract.swapExactTokensForTokens(
+                    amountInWei,
+                    amountOutMin * BigInt(95) / BigInt(100), // 5% slippage tolerance
+                    tokenInAddress,
+                    tokenOutAddress
+                );
+                
+                const receipt = await swapTx.wait();
+                showStatus('✅ Swap completed successfully!', 'success', 'swap-status');
+                
+                // Reset form
+                document.getElementById('swapAmountIn').value = '';
+                document.getElementById('swapAmountOut').value = '';
+                
+            } catch (error) {
+                console.error('Swap error:', error);
+                showStatus(`Error: ${error.message}`, 'error', 'swap-status');
+            } finally {
+                document.getElementById('swapBtn').disabled = false;
+            }
+        }
+
+        // Swap token positions in swap interface
+        function swapTokenPositions() {
+            const tokenIn = document.getElementById('tokenIn');
+            const tokenOut = document.getElementById('tokenOut');
+            
+            const tempValue = tokenIn.value;
+            tokenIn.value = tokenOut.value;
+            tokenOut.value = tempValue;
+            
+            document.getElementById('swapAmountIn').value = '';
+            document.getElementById('swapAmountOut').value = '';
+            document.getElementById('swap-price-info').style.display = 'none';
+        }
+
+        // Create new liquidity pool
+        async function createPool() {
+            const tokenA = document.getElementById('addTokenA').value;
+            const tokenB = document.getElementById('addTokenB').value;
+            
+            if (!tokenA || !tokenB) {
+                showStatus('Please select both tokens', 'error', 'liquidity-status');
+                return;
+            }
+            
+            try {
+                document.getElementById('createPoolBtn').disabled = true;
+                showStatus('Creating pool...', 'loading', 'liquidity-status');
+                
+                const tx = await dexContract.createPool(tokenA, tokenB);
+                await tx.wait();
+                
+                showStatus('✅ Pool created successfully!', 'success', 'liquidity-status');
+                document.getElementById('createPoolBtn').style.display = 'none';
+                document.getElementById('addLiquidityBtn').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Create pool error:', error);
+                showStatus(`Error: ${error.message}`, 'error', 'liquidity-status');
+            } finally {
+                document.getElementById('createPoolBtn').disabled = false;
+            }
+        }
+
+        // Add liquidity to pool
+        async function addLiquidity() {
+            const tokenA = document.getElementById('addTokenA').value;
+            const tokenB = document.getElementById('addTokenB').value;
+            const amountA = document.getElementById('addAmountA').value;
+            const amountB = document.getElementById('addAmountB').value;
+            
+            if (!tokenA || !tokenB || !amountA || !amountB) {
+                showStatus('Please fill all fields', 'error', 'liquidity-status');
+                return;
+            }
+            
+            try {
+                document.getElementById('addLiquidityBtn').disabled = true;
+                showStatus('Approving tokens...', 'loading', 'liquidity-status');
+                
+                // Approve both tokens
+                const tokenAContract = new ethers.Contract(tokenA, ERC20_ABI, signer);
+                const tokenBContract = new ethers.Contract(tokenB, ERC20_ABI, signer);
+                const amountAWei = ethers.parseEther(amountA);
+                const amountBWei = ethers.parseEther(amountB);
+                
+                const approveATx = await tokenAContract.approve(DEX_CONTRACT_ADDRESS, amountAWei);
+                await approveATx.wait();
+                
+                const approveBTx = await tokenBContract.approve(DEX_CONTRACT_ADDRESS, amountBWei);
+                await approveBTx.wait();
+                
+                showStatus('Adding liquidity...', 'loading', 'liquidity-status');
+                
+                // Add liquidity
+                const tx = await dexContract.addLiquidity(
+                    tokenA,
+                    tokenB,
+                    amountAWei,
+                    amountBWei,
+                    amountAWei * BigInt(95) / BigInt(100), // 5% slippage
+                    amountBWei * BigInt(95) / BigInt(100)  // 5% slippage
+                );
+                
+                await tx.wait();
+                showStatus('✅ Liquidity added successfully!', 'success', 'liquidity-status');
+                
+                // Reset form
+                document.getElementById('addAmountA').value = '';
+                document.getElementById('addAmountB').value = '';
+                
+            } catch (error) {
+                console.error('Add liquidity error:', error);
+                showStatus(`Error: ${error.message}`, 'error', 'liquidity-status');
+            } finally {
+                document.getElementById('addLiquidityBtn').disabled = false;
+            }
+        }
+
+        // Remove liquidity from pool
+        async function removeLiquidity() {
+            // Implementation for remove liquidity
+            showStatus('Remove liquidity functionality - Coming soon!', 'loading', 'liquidity-status');
+        }
+
+        // Load all active pools
+        async function loadPools() {
+            if (!dexContract) {
+                showStatus('Please connect wallet first', 'error', 'swap-status');
+                return;
+            }
+            
+            try {
+                const poolsList = document.getElementById('pools-list');
+                poolsList.innerHTML = '<div class="spinner"></div>';
+                
+                // This is simplified - in real implementation, you'd get all pools
+                // and fetch their information
+                poolsList.innerHTML = '<p style="text-align: center; opacity: 0.7;">No active pools found. Create the first pool!</p>';
+                
+            } catch (error) {
+                console.error('Load pools error:', error);
+                document.getElementById('pools-list').innerHTML = '<p style="color: #f44336;">Error loading pools</p>';
+            }
+        }
+
+        // Show different liquidity tabs
+        function showLiquidityTab(tab) {
+            const addTab = document.getElementById('add-liquidity-tab');
+            const removeTab = document.getElementById('remove-liquidity-tab');
+            const buttons = document.querySelectorAll('.tab-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (tab === 'add') {
+                addTab.style.display = 'block';
+                removeTab.style.display = 'none';
+                buttons[0].classList.add('active');
+            } else {
+                addTab.style.display = 'none';
+                removeTab.style.display = 'block';
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Update remove liquidity preview
+        function updateRemovePreview() {
+            const percentage = document.getElementById('removePercentage').value;
+            document.getElementById('removePercentageText').textContent = percentage + '%';
+            // Additional preview logic would go here
+        }
+
+        // Check if pool exists for selected tokens
+        async function checkPoolExists() {
+            const tokenA = document.getElementById('addTokenA').value;
+            const tokenB = document.getElementById('addTokenB').value;
+            
+            if (!tokenA || !tokenB || !dexContract) return;
+            
+            try {
+                const [reserveA, reserveB, totalLiquidity, exists] = await dexContract.getPoolInfo(tokenA, tokenB);
+                
+                if (exists) {
+                    document.getElementById('createPoolBtn').style.display = 'none';
+                    document.getElementById('addLiquidityBtn').style.display = 'block';
+                } else {
+                    document.getElementById('createPoolBtn').style.display = 'block';
+                    document.getElementById('addLiquidityBtn').style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Error checking pool:', error);
+            }
+        }
+
+        // Show status messages
+        function showStatus(message, type, containerId) {
+            const container = document.getElementById(containerId);
+            container.className = `status ${type}`;
+            container.innerHTML = message;
+            
+            if (type === 'loading') {
+                container.innerHTML += '<div class="spinner"></div>';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('swapAmountIn').addEventListener('input', calculateSwapOutput);
+        document.getElementById('tokenIn').addEventListener('change', calculateSwapOutput);
+        document.getElementById('tokenOut').addEventListener('change', calculateSwapOutput);
+        document.getElementById('addTokenA').addEventListener('change', checkPoolExists);
+        document.getElementById('addTokenB').addEventListener('change', checkPoolExists);
+
+        // Auto-connect if previously connected
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    connectWallet();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
